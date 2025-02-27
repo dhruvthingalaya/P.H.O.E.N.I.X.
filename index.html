@@ -4,57 +4,15 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PHOENIX AI</title>
-    <style>
-      body {
-        background-color: #121212;
-        color: white;
-        font-family: Arial, sans-serif;
-        text-align: center;
-      }
-      #chatbox {
-        width: 80%;
-        height: 300px;
-        border: 1px solid white;
-        margin: auto;
-        padding: 10px;
-        overflow-y: scroll;
-        background-color: #1e1e1e;
-      }
-      input {
-        width: 60%;
-        padding: 10px;
-        margin: 10px;
-      }
-      button {
-        padding: 10px 20px;
-        background: red;
-        color: white;
-        border: none;
-        cursor: pointer;
-      }
-    </style>
+    <link rel="stylesheet" href="style.css" />
   </head>
   <body>
     <h1>PHOENIX AI</h1>
     <div id="chatbox"></div>
     <input type="text" id="userInput" placeholder="Type a message..." />
     <button onclick="sendMessage()">Send</button>
+    <button onclick="startListening()">Speak</button>
 
-    <script>
-      function sendMessage() {
-        let input = document.getElementById("userInput").value;
-        let chatbox = document.getElementById("chatbox");
-
-        if (input.trim() === "") return; // Ignore empty messages
-
-        chatbox.innerHTML += "<p><b>You:</b> " + input + "</p>";
-        document.getElementById("userInput").value = "";
-
-        // Simulated AI response (this will be replaced with real AI later)
-        setTimeout(() => {
-          chatbox.innerHTML += "<p><b>PHOENIX:</b> Thinking...</p>";
-        }, 1000);
-      }
-    </script>
+    <script src="script.js"></script>
   </body>
 </html>
