@@ -1,5 +1,10 @@
 window.onload = loadMemory;
 
+window.onload = function () {
+  startWakeWordDetection();
+};
+
+
 const funReplies = {
   "how are you": [
     "I'm an AI, so I don't have feelings... but let's pretend I'm fantastic!",
@@ -76,27 +81,63 @@ function startListening() {
   };
 }
 
-function startVoiceRecognition() {
+function startWakeWordDetection() {
   let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-  recognition.lang = "en-US"; // Set language
+  recognition.lang = "en-US";
+  recognition.continuous = true; // Keep listening in the background
+  recognition.interimResults = true; // Detect speech in real time
 
   recognition.onstart = function () {
-    console.log("Listening...");
+    console.log("Listening for wake word...");
   };
 
   recognition.onresult = function (event) {
-    let transcript = event.results[0][0].transcript;
-    document.getElementById("userInput").value = transcript; // Set input field
-    sendMessage(); // Send as chat message
+    let transcript = event.results[event.results.length - 1][0].transcript.toLowerCase();
+    console.log("Heard:", transcript);
+
+    // If wake word detected, start normal voice recognition
+    if (transcript.includes("hey phoenix")) {
+      console.log("Wake word detected!");
+      speak("Yes? How can I assist?");
+      startVoiceCommandRecognition(); // Start full speech-to-text
+    }
   };
 
   recognition.onerror = function (event) {
-    console.log("Voice recognition error:", event.error);
+    console.log("Error:", event.error);
+    recognition.start(); // Restart listening on error
+  };
+
+  recognition.onend = function () {
+    console.log("Restarting wake word detection...");
+    recognition.start(); // Restart when it stops
   };
 
   recognition.start();
 }
 
+function startVoiceCommandRecognition() {
+  let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = "en-US";
+
+  recognition.onstart = function () {
+    console.log("Listening for a command...");
+  };
+
+  recognition.onresult = function (event) {
+    let command = event.results[0][0].transcript;
+    console.log("User said:", command);
+
+    document.getElementById("userInput").value = command; // Fill input box
+    sendMessage(); // Process as normal chat
+  };
+
+  recognition.onerror = function (event) {
+    console.log("Error:", event.error);
+  };
+
+  recognition.start();
+}
 
 async function sendMessage() {
   let input = document.getElementById("userInput").value;
