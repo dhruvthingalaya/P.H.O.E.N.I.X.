@@ -1,3 +1,5 @@
+window.onload = loadMemory;
+
 function startListening() {
   let recognition = new (window.SpeechRecognition ||
     window.webkitSpeechRecognition)();
@@ -31,7 +33,12 @@ async function sendMessage() {
   chatbox.innerHTML += `<p><b>PHOENIX:</b> ${response}</p>`;
   chatbox.scrollTop = chatbox.scrollHeight;
 
-  speak(response); // Make AI speak the response
+  speak(response); // Make AI speak
+
+  // Store message in memory
+  let chatMemory = JSON.parse(localStorage.getItem("chatMemory")) || [];
+  chatMemory.push({ user: input, ai: response });
+  localStorage.setItem("chatMemory", JSON.stringify(chatMemory));
 }
 
 async function getAIResponse(message) {
@@ -59,4 +66,21 @@ function speak(text) {
   speech.rate = 1; // Adjust speed if needed (1 = normal)
   speech.pitch = 1; // Adjust pitch if needed
   window.speechSynthesis.speak(speech);
+}
+
+function loadMemory() {
+  let chatbox = document.getElementById("chatbox");
+  let chatMemory = JSON.parse(localStorage.getItem("chatMemory")) || [];
+
+  chatMemory.forEach((entry) => {
+    chatbox.innerHTML += `<p><b>You:</b> ${entry.user}</p>`;
+    chatbox.innerHTML += `<p><b>PHOENIX:</b> ${entry.ai}</p>`;
+  });
+
+  chatbox.scrollTop = chatbox.scrollHeight;
+}
+
+function clearMemory() {
+  localStorage.removeItem("chatMemory");
+  document.getElementById("chatbox").innerHTML = "";
 }
