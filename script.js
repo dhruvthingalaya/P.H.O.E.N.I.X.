@@ -41,21 +41,33 @@ async function sendMessage() {
   localStorage.setItem("chatMemory", JSON.stringify(chatMemory));
 }
 
+
 async function getAIResponse(message) {
-  const apiKey = "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"; // Replace with your API Key
-  const response = await fetch(
-    "https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct",
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ inputs: message }),
-    }
-  );
+  const apiKey = "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"; // Replace with your actual key
+
+  // Get past messages from memory (limit to last 5 messages)
+  let chatMemory = JSON.parse(localStorage.getItem("chatMemory")) || [];
+  let recentMemory = chatMemory.slice(-5).map(entry => `You: ${entry.user}\nPHOENIX: ${entry.ai}`).join("\n");
+
+  // Create a full prompt with context
+  let fullPrompt = `${recentMemory}\nYou: ${message}\nPHOENIX:`;
+
+  const response = await fetch("https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct", {
+    method: "POST",
+    headers: {
+      "Authorization": `Bearer ${apiKey}`,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ inputs: fullPrompt })
+  });
 
   const data = await response.json();
+  console.log("API Response:", data); // Debugging
+
+  if (data.error) {
+    return "Error: " + data.error;
+  }
+
   return data[0]?.generated_text || "Sorry, I couldn't understand that.";
 }
 
