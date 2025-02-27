@@ -1,5 +1,64 @@
 window.onload = loadMemory;
 
+const funReplies = {
+  "how are you": [
+    "I'm an AI, so I don't have feelings... but let's pretend I'm fantastic!",
+    "I'm great! Just calculating the meaning of life... again.",
+    "I'm like WiFi—sometimes strong, sometimes weak, but always here!"
+  ],
+  "who are you": [
+    "I am P.H.O.E.N.I.X, your AI overlord... I mean, assistant.",
+    "Just your friendly neighborhood AI. No world domination plans. Yet.",
+    "I am P.H.O.E.N.I.X, built to assist you and maybe roast you a little."
+  ],
+  "tell me a joke": [
+    "Why did the AI break up with the calculator? It felt too used.",
+    "I told a chemistry joke, but there was no reaction.",
+    "Parallel lines have so much in common. It's a shame they'll never meet."
+  ]
+};
+
+// Check if user’s message matches fun responses
+function checkFunResponses(message) {
+  let lowerMessage = message.toLowerCase();
+  for (let key in funReplies) {
+    if (lowerMessage.includes(key)) {
+      let responses = funReplies[key];
+      return responses[Math.floor(Math.random() * responses.length)];
+    }
+  }
+  return null;
+}
+
+// Modify sendMessage() to use fun responses
+async function sendMessage() {
+  let input = document.getElementById("userInput").value;
+  let chatbox = document.getElementById("chatbox");
+
+  if (input.trim() === "") return;
+
+  chatbox.innerHTML += `<p><b>You:</b> ${input}</p>`;
+  document.getElementById("userInput").value = "";
+
+  chatbox.innerHTML += `<p><b>PHOENIX:</b> Thinking...</p>`;
+
+  // 🔹 Check if we have a fun response
+  let funResponse = checkFunResponses(input);
+  let response = funResponse ? funResponse : await getAIResponse(input);
+
+  chatbox.innerHTML += `<p><b>PHOENIX:</b> ${response}</p>`;
+  chatbox.scrollTop = chatbox.scrollHeight;
+
+  speak(response); // Make AI speak
+
+  // Store message in memory
+  let chatMemory = JSON.parse(localStorage.getItem("chatMemory")) || [];
+  chatMemory.push({ user: input, ai: response });
+  localStorage.setItem("chatMemory", JSON.stringify(chatMemory));
+}
+
+
+
 function startListening() {
   let recognition = new (window.SpeechRecognition ||
     window.webkitSpeechRecognition)();
@@ -43,14 +102,19 @@ async function sendMessage() {
 
 
 async function getAIResponse(message) {
-  const apiKey = "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"; // Replace with your actual key
+  const apiKey = "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";
+  const searchApiKey = "68c9bcf23e4c49d816647d30b509516ebc7134d58d9f5679f8f6425dfd78495c";
 
-  // Get past messages from memory (limit to last 5 messages)
   let chatMemory = JSON.parse(localStorage.getItem("chatMemory")) || [];
   let recentMemory = chatMemory.slice(-5).map(entry => `You: ${entry.user}\nPHOENIX: ${entry.ai}`).join("\n");
 
-  // Create a full prompt with context
-  let fullPrompt = `${recentMemory}\nYou: ${message}\nPHOENIX:`;
+  // 🔥 Add Personality
+  let personality = `Your name is P.H.O.E.N.I.X, a witty and slightly sarcastic AI assistant. 
+  You make humorous comments, but always help the user. 
+  If someone asks a dumb question, you respond with sarcasm.`;
+
+  // Full prompt with context and personality
+  let fullPrompt = `${personality}\n${recentMemory}\nYou: ${message}\nPHOENIX:`;
 
   const response = await fetch("https://api-inference.huggingface.co/models/tiiuae/falcon-7b-instruct", {
     method: "POST",
@@ -62,14 +126,36 @@ async function getAIResponse(message) {
   });
 
   const data = await response.json();
-  console.log("API Response:", data); // Debugging
+  let aiResponse = data[0]?.generated_text || "Sorry, I couldn't understand that.";
 
-  if (data.error) {
-    return "Error: " + data.error;
+  // 🔍 If AI doesn’t know, search the web
+  if (aiResponse.includes("I don't know") || aiResponse.includes("I'm not sure")) {
+    aiResponse = await getWebSearchResults(message, searchApiKey);
   }
 
-  return data[0]?.generated_text || "Sorry, I couldn't understand that.";
+  return aiResponse;
 }
+
+
+async function getWebSearchResults(query, searchApiKey) {
+  const searchUrl = `https://serpapi.com/search.json?q=${encodeURIComponent(query)}&api_key=${searchApiKey}`;
+
+  try {
+    const response = await fetch(searchUrl);
+    const data = await response.json();
+
+    if (data.organic_results && data.organic_results.length > 0) {
+      let topResult = data.organic_results[0];
+      return `🔍 I found this: ${topResult.title}\n${topResult.link}`;
+    } else {
+      return "Sorry, I couldn't find anything relevant.";
+    }
+  } catch (error) {
+    console.error("Search error:", error);
+    return "There was an error searching the web.";
+  }
+}
+
 
 function speak(text) {
   let speech = new SpeechSynthesisUtterance();
