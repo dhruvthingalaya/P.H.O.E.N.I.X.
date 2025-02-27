@@ -76,6 +76,28 @@ function startListening() {
   };
 }
 
+function startVoiceRecognition() {
+  let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+  recognition.lang = "en-US"; // Set language
+
+  recognition.onstart = function () {
+    console.log("Listening...");
+  };
+
+  recognition.onresult = function (event) {
+    let transcript = event.results[0][0].transcript;
+    document.getElementById("userInput").value = transcript; // Set input field
+    sendMessage(); // Send as chat message
+  };
+
+  recognition.onerror = function (event) {
+    console.log("Voice recognition error:", event.error);
+  };
+
+  recognition.start();
+}
+
+
 async function sendMessage() {
   let input = document.getElementById("userInput").value;
   let chatbox = document.getElementById("chatbox");
@@ -85,7 +107,8 @@ async function sendMessage() {
   chatbox.innerHTML += `<p><b>You:</b> ${input}</p>`;
   document.getElementById("userInput").value = "";
 
-  chatbox.innerHTML += `<p><b>PHOENIX:</b> Thinking...</p>`;
+  chatbox.innerHTML += `<p><b>PHOENIX:</b> ${response}</p>`;
+  speak(response); // AI speaks the response
 
   let response = await getAIResponse(input);
 
@@ -160,11 +183,14 @@ async function getWebSearchResults(query, searchApiKey) {
 function speak(text) {
   let speech = new SpeechSynthesisUtterance();
   speech.text = text;
-  speech.lang = "en-US";
-  speech.rate = 1; // Adjust speed if needed (1 = normal)
-  speech.pitch = 1; // Adjust pitch if needed
+  speech.lang = "en-US"; // Set language
+  speech.volume = 1; // Adjust volume (0 to 1)
+  speech.rate = 1; // Speed of speech (0.5 to 2)
+  speech.pitch = 1; // Pitch (0 to 2)
+
   window.speechSynthesis.speak(speech);
 }
+
 
 function loadMemory() {
   let chatbox = document.getElementById("chatbox");
